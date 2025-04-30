@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Link Saver Pro</title> 
+    <style>
+        /* --- Professional Styles & Colors (Existing styles remain largely the same) --- */
+        :root {
+            --primary-color: #2B3A67; /* Deep Blue */
+            --secondary-color: #D4AF37; /* Muted Gold */
+            --background-light: #F8F9FA;
+            --surface-light: #FFFFFF;
+            --text-primary-light: #212529;
+            --text-secondary-light: #6C757D;
+            --danger-color: #DC3545;
+            --info-color: #17A2B8; /* Added for potential info elements */
+            --success-color: #28A745; /* Added for potential success elements */
+
+            --background-dark: #121828;
+            --surface-dark: #1F2937;
+            --text-primary-dark: #E5E7EB;
+            --text-secondary-dark: #9CA3AF;
+
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            --border-radius: 10px;
+            --box-shadow: 0 3px 12px rgba(43, 58, 103, 0.1);
+            --box-shadow-dark: 0 4px 15px rgba(0, 0, 0, 0.3);
+            --transition-speed: 0.3s;
+            --animation-timing: cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* --- Dark Mode --- */
+        body.dark-mode {
+            --primary-color: #5A76C8;
+            --secondary-color: #E0C56A;
+            --background-light: var(--background-dark);
+            --surface-light: var(--surface-dark);
+            --text-primary-light: var(--text-primary-dark);
+            --text-secondary-light: var(--text-secondary-dark);
+            --box-shadow: var(--box-shadow-dark);
+        }
+
+        /* --- Base Styles --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; }
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-light);
+            color: var(--text-primary-light);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+        }
+
+        /* --- App Bar --- */
+        .app-bar {
+            background-color: var(--primary-color);
+            color: var(--surface-light);
+            padding: 0.8rem 1.5rem;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color var(--transition-speed);
+        }
+        .app-bar h1 { font-size: 1.4rem; font-weight: 600; }
+        .theme-toggle {
+            background: none; border: none; color: var(--surface-light);
+            font-size: 1.5rem; cursor: pointer; padding: 5px;
+            transition: transform 0.2s;
+        }
+        .theme-toggle:active { transform: scale(0.9); }
+
+        /* --- Search & Filter Bar --- */
+        .controls-bar {
+             padding: 1rem 1.5rem 0.5rem;
+             background-color: var(--background-light);
+             border-bottom: 1px solid #e0e0e0;
+             position: sticky;
+             top: 58px; /* Adjusted based on app-bar size */
+             z-index: 90;
+             transition: background-color var(--transition-speed), border-color var(--transition-speed);
+        }
+         body.dark-mode .controls-bar { border-bottom-color: #333; }
+
+        #search-input {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 1px solid #ccc;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            background-color: var(--surface-light);
+            color: var(--text-primary-light);
+            margin-bottom: 0.5rem;
+            transition: border-color var(--transition-speed), background-color var(--transition-speed), color var(--transition-speed), box-shadow 0.2s;
+        }
+         body.dark-mode #search-input { border-color: #444; }
+         #search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(43, 58, 103, 0.3); /* Adjusted focus color */
+         }
+         body.dark-mode #search-input:focus {
+             box-shadow: 0 0 0 2px rgba(90, 118, 200, 0.4); /* Dark mode focus */
+         }
+
+
+        #filter-status {
+            font-size: 0.85rem; color: var(--text-secondary-light);
+            min-height: 20px; text-align: center;
+            transition: color var(--transition-speed);
+        }
+        #filter-status button {
+            background: none; border: none; color: var(--primary-color);
+            cursor: pointer; text-decoration: underline; padding: 0 3px; font-size: inherit;
+        }
+        body.dark-mode #filter-status button { color: var(--secondary-color); }
+        .active-filter-text { font-weight: 600; color: var(--text-primary-light); margin: 0 3px;} /* Style for filter tag name */
+
+
+        /* --- Main Content --- */
+        main {
+            flex-grow: 1;
+            padding: 1.5rem;
+            padding-bottom: calc(4rem + 1.5rem); /* Space for FAB */
+        }
+
+        /* --- Link List & Cards --- */
+        #link-list { list-style: none; }
+
+        .link-card {
+            background-color: var(--surface-light); border-radius: var(--border-radius);
+            padding: 1rem 1.2rem; margin-bottom: 1.2rem; box-shadow: var(--box-shadow);
+            display: flex; align-items: flex-start; gap: 1rem; position: relative; overflow: hidden;
+            transition: background-color var(--transition-speed), box-shadow var(--transition-speed), transform 0.2s var(--animation-timing);
+            opacity: 0; transform: translateY(20px);
+            animation: fadeInSlideUp 0.5s var(--animation-timing) forwards;
+            cursor: pointer; /* Make card body indicate clickability */
+        }
+        .link-card:hover {
+            transform: translateY(-3px); box-shadow: 0 6px 16px rgba(43, 58, 103, 0.15);
+        }
+         body.dark-mode .link-card:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); }
+
+        /* Staggered Animation (Reduced delay) */
+        .link-card:nth-child(1) { animation-delay: 0.03s; }
+        .link-card:nth-child(2) { animation-delay: 0.06s; }
+        .link-card:nth-child(3) { animation-delay: 0.09s; }
+        .link-card:nth-child(4) { animation-delay: 0.12s; }
+
+
+        @keyframes fadeInSlideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .link-card .favicon {
+            width: 32px; height: 32px; border-radius: 6px;
+            background-color: #eee; color: #aaa; display: flex;
+            align-items: center; justify-content: center; font-size: 1.1rem;
+            font-weight: bold; flex-shrink: 0; margin-top: 4px; overflow: hidden;
+            border: 1px solid #eee;
+        }
+        .link-card .favicon img { display: block; width: 100%; height: 100%; object-fit: contain; }
+         body.dark-mode .link-card .favicon { background-color: #333; border-color: #444; }
+
+
+        .link-content { flex-grow: 1; overflow: hidden; }
+        .link-title {
+            font-weight: 600; font-size: 1.1rem; margin-bottom: 0.2rem;
+            color: var(--text-primary-light); display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;
+            transition: color var(--transition-speed);
+        }
+        .link-url {
+            font-size: 0.85rem; color: var(--text-secondary-light); white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.2rem; /* Reduced margin */
+            transition: color var(--transition-speed);
+        }
+        .link-url a { color: inherit; text-decoration: none; }
+        .link-url a:hover { text-decoration: underline; }
+
+        /* --- NEW: Saved Date Style --- */
+        .link-saved-date {
+            font-size: 0.75rem; /* Smaller font size */
+            color: var(--text-secondary-light);
+            margin-bottom: 0.4rem;
+            transition: color var(--transition-speed);
+        }
+
+        .link-notes {
+            font-size: 0.9rem; color: var(--text-secondary-light); margin-top: 0.5rem;
+            white-space: pre-wrap; word-break: break-word;
+            transition: color var(--transition-speed); max-height: 60px; overflow: hidden;
+            text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .link-tags { margin-top: 0.8rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .tag {
+            background-color: var(--primary-color); color: var(--surface-light);
+            font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 12px;
+            opacity: 0.8; cursor: pointer;
+            transition: background-color var(--transition-speed), transform 0.2s;
+        }
+        .tag:hover { opacity: 1; transform: scale(1.05); }
+        .tag:active { transform: scale(0.95); }
+        body.dark-mode .tag { background-color: #5A76C8; }
+        .tag.active-filter {
+             background-color: var(--secondary-color); color: var(--text-primary-light);
+             opacity: 1; font-weight: 500;
+        }
+
+
+        .link-actions {
+            display: flex; flex-direction: column; /* Stack buttons vertically */
+            gap: 0.3rem; /* Reduced gap */
+            align-items: center; /* Center icons */
+            margin-left: 0.5rem; /* Space between content and actions */
+            flex-shrink: 0;
+            cursor: default; /* Prevent card click propagation */
+            z-index: 5; /* Ensure buttons are clickable */
+        }
+        .link-actions button {
+            background: none; border: none; cursor: pointer; font-size: 1.1rem; /* Slightly smaller icons */
+            color: var(--text-secondary-light); padding: 6px; /* Slightly more padding for tap area */
+            transition: color var(--transition-speed), transform 0.2s;
+            line-height: 1; /* Prevent extra spacing */
+            width: 32px; /* Ensure consistent button size */
+            height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; /* Make tap area circular */
+        }
+        .link-actions button:hover { color: var(--primary-color); background-color: rgba(0,0,0,0.05); }
+        body.dark-mode .link-actions button:hover { background-color: rgba(255,255,255,0.1); }
+        .link-actions button:active { transform: scale(0.9); }
+        .link-actions .delete-btn:hover { color: var(--danger-color); }
+
+        /* --- FAB (Floating Action Button) --- */
+        .fab {
+            position: fixed; bottom: 1.5rem; right: 1.5rem; width: 56px; height: 56px;
+            background-color: var(--primary-color); color: var(--surface-light);
+            border: none; border-radius: 50%; font-size: 1.8rem; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); cursor: pointer; z-index: 150;
+            transition: background-color var(--transition-speed), transform 0.2s var(--animation-timing), box-shadow 0.2s;
+        }
+         .fab:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
+         .fab:active { transform: scale(0.95); }
+
+        /* --- Modal Styles (Shared Base) --- */
+        .modal {
+            position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center; z-index: 200; opacity: 0; visibility: hidden;
+            transition: opacity var(--transition-speed) ease-out, visibility var(--transition-speed) ease-out;
+            padding: 1rem; /* Add padding for smaller screens */
+        }
+        .modal.visible { opacity: 1; visibility: visible; }
+
+        .modal-content {
+            background-color: var(--surface-light); padding: 1.5rem 2rem 2rem;
+            border-radius: var(--border-radius); /* Round all corners */
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            overflow-y: auto; /* Allow scrolling if content overflows */
+            max-height: 90vh; /* Prevent modal from being too tall */
+            transition: background-color var(--transition-speed), transform 0.4s var(--animation-timing);
+        }
+
+        /* Slide-up for Add/Edit Modal */
+        #add-edit-modal { align-items: flex-end; }
+        #add-edit-modal .modal-content {
+             border-radius: var(--border-radius) var(--border-radius) 0 0; /* Top corners only */
+             transform: translateY(100%);
+        }
+        #add-edit-modal.visible .modal-content { transform: translateY(0); }
+
+         /* Pop-in for Confirm & View Modals */
+        #confirm-dialog, #view-details-modal { align-items: center; }
+        #confirm-dialog .modal-content, #view-details-modal .modal-content {
+            transform: scale(0.9);
+            transition: background-color var(--transition-speed), transform 0.3s var(--animation-timing);
+        }
+        #confirm-dialog.visible .modal-content, #view-details-modal.visible .modal-content { transform: scale(1); }
+
+        .modal h2 {
+            margin-bottom: 1.5rem; color: var(--text-primary-light);
+            font-size: 1.3rem; text-align: center;
+            transition: color var(--transition-speed);
+            font-weight: 600;
+        }
+
+        /* --- Form Styles --- */
+        .form-group { margin-bottom: 1rem; }
+        .form-group label {
+            display: block; margin-bottom: 0.4rem; font-weight: 500;
+            color: var(--text-secondary-light); transition: color var(--transition-speed);
+            font-size: 0.9rem;
+        }
+        .form-group input[type="url"], .form-group input[type="text"], .form-group textarea {
+            width: 100%; padding: 0.8rem 1rem; border: 1px solid #ccc;
+            border-radius: var(--border-radius); font-size: 1rem;
+            background-color: var(--background-light); color: var(--text-primary-light);
+            transition: border-color var(--transition-speed), background-color var(--transition-speed), color var(--transition-speed);
+        }
+         body.dark-mode .form-group input, body.dark-mode .form-group textarea { border-color: #444; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+
+        /* Focus styles for form inputs */
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(43, 58, 103, 0.3); /* Adjusted focus color */
+        }
+         body.dark-mode .form-group input:focus, body.dark-mode .form-group textarea:focus {
+            box-shadow: 0 0 0 2px rgba(90, 118, 200, 0.4); /* Dark mode focus */
+         }
+
+        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+        .modal-actions button {
+            padding: 0.7rem 1.5rem; border-radius: var(--border-radius); border: none;
+            font-size: 1rem; font-weight: 500; cursor: pointer;
+            transition: background-color var(--transition-speed), color var(--transition-speed), opacity 0.2s, transform 0.2s;
+        }
+        .modal-actions button:active { transform: scale(0.95); }
+        .btn-primary { background-color: var(--primary-color); color: var(--surface-light); }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background-color: #e2e6ea; color: var(--text-primary-light); }
+         body.dark-mode .btn-secondary { background-color: #495057; color: var(--text-primary-dark); }
+        .btn-secondary:hover { opacity: 0.9; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+
+        /* --- View Details Modal Specific Styles --- */
+        #view-details-modal .modal-content { max-width: 550px; /* Slightly smaller */ }
+        .details-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+        .details-favicon { width: 40px; height: 40px; /* Larger favicon */ border-radius: 8px; flex-shrink: 0; background-color: #eee; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; color: #aaa; }
+        .details-favicon img { display: block; width: 100%; height: 100%; object-fit: contain; }
+        body.dark-mode .details-favicon { background-color: #333; border-color: #444; }
+        .details-title-url { flex-grow: 1; overflow: hidden; }
+        .details-title { font-size: 1.2rem; font-weight: 600; color: var(--text-primary-light); margin-bottom: 0.1rem; word-break: break-word; }
+        .details-url { font-size: 0.9rem; color: var(--text-secondary-light); word-break: break-all; } /* Allow long URLs to wrap */
+        .details-url a { color: var(--primary-color); text-decoration: none; }
+        .details-url a:hover { text-decoration: underline; }
+        body.dark-mode .details-url a { color: var(--secondary-color); }
+        .details-section { margin-bottom: 1rem; }
+        .details-section h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary-light); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .details-notes { white-space: pre-wrap; word-break: break-word; background-color: var(--background-light); padding: 0.8rem; border-radius: 6px; font-size: 0.95rem; max-height: 200px; overflow-y: auto; }
+        .details-tags { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+        /* Reuse .tag style for details, slightly adjusted maybe */
+        .details-tags .tag { font-size: 0.8rem; padding: 0.3rem 0.7rem; opacity: 1; cursor: default; }
+        .details-info { font-size: 0.9rem; color: var(--text-secondary-light); }
+        .details-info strong { color: var(--text-primary-light); }
+
+        /* --- Empty State --- */
+        #empty-state { text-align: center; margin-top: 4rem; color: var(--text-secondary-light); display: none; transition: color var(--transition-speed); }
+        #empty-state.visible { display: block; }
+        #empty-state svg { width: 80px; height: 80px; margin-bottom: 1rem; opacity: 0.6; }
+        #empty-state p { font-size: 1.1rem; }
+
+        /* --- Confirmation Dialog --- */
+        #confirm-dialog .modal-content { max-width: 350px; text-align: center; }
+        #confirm-dialog p { margin-bottom: 1.5rem; font-size: 1.1rem; }
+
+         /* --- Utility --- */
+         .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <header class="app-bar">
+            <h1>Link Saver Pro</h1> 
+            <button id="theme-toggle-btn" class="theme-toggle" aria-label="Toggle Theme">☀️</button>
+        </header>
+
+        <div class="controls-bar">
+             <input type="search" id="search-input" placeholder="Search title, URL, notes, tags...">
+             <div id="filter-status"></div>
+        </div>
+
+        <main id="main-content">
+            <ul id="link-list">
+                <!-- Link cards will be inserted here by JavaScript -->
+            </ul>
+            <div id="empty-state">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                </svg>
+                <p id="empty-state-message">No links saved yet.</p>
+                <p id="empty-state-add-prompt">Tap the + button to add your first link!</p>
+            </div>
+        </main>
+
+        <button id="fab-add" class="fab" aria-label="Add new link">+</button>
+
+        <!-- Add/Edit Link Modal -->
+        <div id="add-edit-modal" class="modal">
+            <div class="modal-content">
+                <h2 id="modal-title">Add New Link</h2>
+                <form id="link-form">
+                    <input type="hidden" id="link-id"> <!-- For editing -->
+                    <div class="form-group">
+                        <label for="link-url">URL *</label> {/* Indicate required */}
+                        <input type="url" id="link-url" placeholder="https://example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="link-title">Title (Optional)</label> {/* Clarify optional */}
+                        <input type="text" id="link-title" placeholder="Auto-generated if blank">
+                    </div>
+                     <div class="form-group">
+                        <label for="link-notes">Notes (Optional)</label>
+                        <textarea id="link-notes" placeholder="Add any notes here..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="link-tags">Tags (Optional, comma-separated)</label>
+                        <input type="text" id="link-tags" placeholder="e.g., work, reading, design">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-btn" class="btn-secondary">Cancel</button>
+                        <button type="submit" id="save-btn" class="btn-primary">Save Link</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+         <!-- Confirm Delete Modal -->
+        <div id="confirm-dialog" class="modal">
+            <div class="modal-content">
+                 <p>Are you sure you want to delete this link?</p>
+                 <div class="modal-actions">
+                        <button type="button" id="confirm-no-btn" class="btn-secondary">Cancel</button>
+                        <button type="button" id="confirm-yes-btn" class="btn-danger">Delete</button>
+                    </div>
+            </div>
+        </div>
+
+        <!-- NEW: View Details Modal -->
+        <div id="view-details-modal" class="modal">
+            <div class="modal-content">
+                <div class="details-header">
+                    <div id="details-favicon-container" class="details-favicon">?</div>
+                    <div class="details-title-url">
+                        <h2 id="details-title" class="details-title">Link Title</h2>
+                        <div id="details-url" class="details-url"><a href="#" target="_blank" rel="noopener noreferrer">https://example.com</a></div>
+                    </div>
+                </div>
+
+                <div class="details-section" id="details-notes-section">
+                    <h3>Notes</h3>
+                    <div id="details-notes" class="details-notes">Notes content will appear here...</div>
+                </div>
+
+                <div class="details-section" id="details-tags-section">
+                    <h3>Tags</h3>
+                    <div id="details-tags" class="details-tags">
+                        <!-- Tags will be inserted here -->
+                    </div>
+                </div>
+
+                 <div class="details-section">
+                     <h3>Details</h3>
+                    <div class="details-info">Saved on: <strong id="details-saved-date">N/A</strong></div>
+                    <div class="details-info">Domain: <strong id="details-domain">N/A</strong></div>
+                 </div>
+
+
+                <div class="modal-actions">
+                    {/* Add Edit/Delete buttons here for convenience */}
+                    <button type="button" id="details-delete-btn" class="btn-danger">Delete</button>
+                    <button type="button" id="details-edit-btn" class="btn-secondary">Edit</button>
+                    <button type="button" id="details-close-btn" class="btn-primary">Close</button>
+                </div>
+            </div>
+        </div>
+
+
+    </div> <!-- End #app -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const linkList = document.getElementById('link-list');
+            const fabAdd = document.getElementById('fab-add');
+            const addEditModal = document.getElementById('add-edit-modal');
+            const confirmDialog = document.getElementById('confirm-dialog');
+            const viewDetailsModal = document.getElementById('view-details-modal'); // New modal
+            const linkForm = document.getElementById('link-form');
+            const modalTitle = document.getElementById('modal-title');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const confirmNoBtn = document.getElementById('confirm-no-btn');
+            const confirmYesBtn = document.getElementById('confirm-yes-btn');
+            const emptyState = document.getElementById('empty-state');
+            const emptyStateMessage = document.getElementById('empty-state-message');
+            const emptyStateAddPrompt = document.getElementById('empty-state-add-prompt');
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const searchInput = document.getElementById('search-input');
+            const filterStatus = document.getElementById('filter-status');
+
+            // Form Fields
+            const linkIdInput = document.getElementById('link-id');
+            const linkUrlInput = document.getElementById('link-url');
+            const linkTitleInput = document.getElementById('link-title');
+            const linkNotesInput = document.getElementById('link-notes');
+            const linkTagsInput = document.getElementById('link-tags');
+            const saveBtn = document.getElementById('save-btn');
+
+            // View Details Modal Elements
+            const detailsFaviconContainer = document.getElementById('details-favicon-container');
+            const detailsTitle = document.getElementById('details-title');
+            const detailsUrl = document.getElementById('details-url');
+            const detailsNotesSection = document.getElementById('details-notes-section');
+            const detailsNotes = document.getElementById('details-notes');
+            const detailsTagsSection = document.getElementById('details-tags-section');
+            const detailsTags = document.getElementById('details-tags');
+            const detailsSavedDate = document.getElementById('details-saved-date');
+            const detailsDomain = document.getElementById('details-domain');
+            const detailsCloseBtn = document.getElementById('details-close-btn');
+            const detailsEditBtn = document.getElementById('details-edit-btn');
+            const detailsDeleteBtn = document.getElementById('details-delete-btn');
+
+            // --- State Variables ---
+            let links = [];
+            let linkToDeleteId = null;
+            let linkToViewId = null; // Track ID for view/edit/delete from details modal
+            let isEditing = false;
+            let currentSearchTerm = '';
+            let activeFilterTag = null;
+
+            // --- Constants ---
+            const FAVICON_SERVICE_URL = 'https://www.google.com/s2/favicons?sz=64&domain=';
+            const DATE_FORMAT_OPTIONS = { year: 'numeric', month: 'short', day: 'numeric' }; // For formatting dates
+
+            // --- Local Storage Functions ---
+            function getLinksFromStorage() {
+                const storedLinks = localStorage.getItem('linkSaverProLinks'); // Updated key
+                return storedLinks ? JSON.parse(storedLinks) : [];
+            }
+
+            function saveLinksToStorage() {
+                localStorage.setItem('linkSaverProLinks', JSON.stringify(links)); // Updated key
+            }
+
+            // --- Theme Management ---
+             function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    themeToggleBtn.textContent = '🌙';
+                    localStorage.setItem('linkSaverProTheme', 'dark'); // Updated key
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    themeToggleBtn.textContent = '☀️';
+                    localStorage.setItem('linkSaverProTheme', 'light'); // Updated key
+                }
+            }
+            function toggleTheme() {
+                const currentTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+                applyTheme(currentTheme);
+            }
+            const savedTheme = localStorage.getItem('linkSaverProTheme'); // Updated key
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme) { applyTheme(savedTheme); }
+            else { applyTheme(prefersDark ? 'dark' : 'light'); }
+
+
+            // --- Rendering Functions ---
+            function renderLinks() {
+                linkList.innerHTML = '';
+                const allLinks = getLinksFromStorage();
+
+                // 1. Filter
+                const filteredLinks = allLinks.filter(link => {
+                    const searchTermLower = currentSearchTerm.toLowerCase();
+                    const matchesSearch = searchTermLower === '' ||
+                                          link.title.toLowerCase().includes(searchTermLower) ||
+                                          link.url.toLowerCase().includes(searchTermLower) ||
+                                          (link.notes && link.notes.toLowerCase().includes(searchTermLower)) ||
+                                          (link.tags && link.tags.some(tag => tag.toLowerCase().includes(searchTermLower))) ||
+                                          (link.domain && link.domain.toLowerCase().includes(searchTermLower)); // Include domain in search
+
+                    const matchesTag = activeFilterTag === null ||
+                                       (link.tags && link.tags.includes(activeFilterTag));
+
+                    return matchesSearch && matchesTag;
+                });
+
+                // 2. Sort (Newest first)
+                filteredLinks.sort((a, b) => b.timestamp - a.timestamp);
+
+                 // 3. Update Filter Status Display
+                if (activeFilterTag) {
+                    filterStatus.innerHTML = `Filtering by tag: <strong class="active-filter-text">${escapeHTML(activeFilterTag)}</strong> <button id="clear-filter-btn">(Show All)</button>`;
+                    document.getElementById('clear-filter-btn')?.addEventListener('click', clearFilter);
+                } else {
+                     filterStatus.innerHTML = '';
+                }
+
+                // 4. Render or Show Empty State
+                if (allLinks.length === 0) {
+                    emptyState.classList.add('visible');
+                    emptyStateMessage.textContent = "No links saved yet.";
+                    emptyStateAddPrompt.style.display = 'block';
+                } else if (filteredLinks.length === 0) {
+                     emptyState.classList.add('visible');
+                     emptyStateMessage.textContent = `No links found matching your ${activeFilterTag ? 'filter' : 'search'}.`;
+                     emptyStateAddPrompt.style.display = 'none';
+                }
+                 else {
+                    emptyState.classList.remove('visible');
+                    filteredLinks.forEach((link, index) => {
+                        const card = createLinkCard(link);
+                        card.style.animationDelay = `${index * 0.03}s`; // Faster stagger
+                        linkList.appendChild(card);
+                    });
+                }
+            }
+
+            function createLinkCard(link) {
+                const li = document.createElement('li');
+                li.className = 'link-card';
+                li.dataset.id = link.id;
+
+                // Use stored domain if available, otherwise try to get it
+                const domain = link.domain || getDomainName(link.url);
+                const faviconUrl = domain ? `${FAVICON_SERVICE_URL}${domain}` : '';
+                const savedDate = new Date(link.timestamp).toLocaleDateString(undefined, DATE_FORMAT_OPTIONS);
+
+                let tagsHTML = '';
+                if (link.tags && link.tags.length > 0) {
+                    tagsHTML = `<div class="link-tags">
+                                    ${link.tags.map(tag =>
+                                        `<span class="tag clickable-tag ${tag === activeFilterTag ? 'active-filter' : ''}" data-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</span>`
+                                    ).join('')}
+                                </div>`;
+                }
+
+                let notesHTML = '';
+                if (link.notes && link.notes.trim() !== '') {
+                    notesHTML = `<p class="link-notes">${escapeHTML(link.notes)}</p>`;
+                }
+
+                 const faviconPlaceholder = domain ? domain.charAt(0).toUpperCase() : '🔗';
+                 const faviconImgHTML = faviconUrl
+                    ? `<img src="${faviconUrl}" alt="Favicon for ${domain}" loading="lazy" onerror="this.parentElement.innerHTML = '${faviconPlaceholder}'; this.remove();">` // Added loading="lazy"
+                    : faviconPlaceholder;
+
+                li.innerHTML = `
+                    <div class="favicon">${faviconImgHTML}</div>
+                    <div class="link-content">
+                        <div class="link-title">${escapeHTML(link.title) || 'Untitled'}</div>
+                        <div class="link-url"><a href="${escapeHTML(link.url)}" target="_blank" rel="noopener noreferrer" tabindex="-1">${escapeHTML(link.url)}</a></div>
+                        <div class="link-saved-date">Saved: ${savedDate}</div>
+                        ${notesHTML}
+                        ${tagsHTML}
+                    </div>
+                    <div class="link-actions">
+                         <button class="edit-btn" aria-label="Edit link" data-id="${link.id}" title="Edit">✏️</button>
+                         <button class="delete-btn" aria-label="Delete link" data-id="${link.id}" title="Delete">🗑️</button>
+                    </div>
+                `;
+
+                // Add event listener to the card content area (excluding buttons) for viewing details
+                 const contentArea = li.querySelector('.link-content');
+                 const faviconArea = li.querySelector('.favicon');
+                 if (contentArea) {
+                     contentArea.addEventListener('click', (e) => {
+                        // Prevent tag clicks from triggering view modal immediately
+                        if (!e.target.classList.contains('clickable-tag')) {
+                             showViewDetailsModal(link.id);
+                         }
+                    });
+                 }
+                 if (faviconArea) {
+                     faviconArea.addEventListener('click', () => showViewDetailsModal(link.id));
+                 }
+
+
+                return li;
+            }
+
+            // --- Modal Handling ---
+            function openModal(modal) {
+                modal.style.display = 'flex';
+                requestAnimationFrame(() => { // Ensures transition plays
+                    modal.classList.add('visible');
+                });
+                document.body.style.overflow = 'hidden'; // Prevent background scroll
+            }
+
+            function closeModal(modal) {
+                modal.classList.remove('visible');
+                // Use transitionend event for reliable cleanup
+                const onTransitionEnd = () => {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = ''; // Restore scroll
+                    modal.removeEventListener('transitionend', onTransitionEnd);
+                };
+                modal.addEventListener('transitionend', onTransitionEnd);
+                 // Fallback timer in case transitionend doesn't fire (e.g., display:none)
+                 setTimeout(() => {
+                     if (modal.style.display !== 'none') { // Check if already hidden
+                         modal.style.display = 'none';
+                         document.body.style.overflow = '';
+                         modal.removeEventListener('transitionend', onTransitionEnd); // Clean up listener just in case
+                     }
+                 }, 500); // Slightly longer than transition duration
+            }
+
+
+            // --- Show Modal Functions ---
+            function showAddModal() {
+                 isEditing = false; modalTitle.textContent = 'Add New Link';
+                 saveBtn.textContent = 'Save Link'; linkForm.reset(); linkIdInput.value = '';
+                 openModal(addEditModal); linkUrlInput.focus();
+            }
+             function showEditModal(link) {
+                 isEditing = true; modalTitle.textContent = 'Edit Link';
+                 saveBtn.textContent = 'Update Link'; linkIdInput.value = link.id;
+                 linkUrlInput.value = link.url; linkTitleInput.value = link.title;
+                 linkNotesInput.value = link.notes || '';
+                 linkTagsInput.value = link.tags ? link.tags.join(', ') : '';
+                 openModal(addEditModal);
+            }
+             function showConfirmDialog(id) {
+                 linkToDeleteId = id; openModal(confirmDialog);
+             }
+
+            // --- NEW: Show View Details Modal ---
+            function showViewDetailsModal(id) {
+                linkToViewId = id; // Store the ID for potential actions
+                const link = links.find(l => l.id === id);
+                if (!link) return;
+
+                // Populate Favicon
+                const domain = link.domain || getDomainName(link.url);
+                const faviconUrl = domain ? `${FAVICON_SERVICE_URL}${domain}` : '';
+                const faviconPlaceholder = domain ? domain.charAt(0).toUpperCase() : '🔗';
+                detailsFaviconContainer.innerHTML = faviconUrl
+                    ? `<img src="${faviconUrl}" alt="Favicon for ${domain}" loading="lazy" onerror="this.parentElement.innerHTML = '${faviconPlaceholder}'; this.remove();">`
+                    : faviconPlaceholder;
+
+                // Populate Title and URL
+                detailsTitle.textContent = escapeHTML(link.title) || 'Untitled';
+                detailsUrl.innerHTML = `<a href="${escapeHTML(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(link.url)}</a>`;
+
+                // Populate Notes (and show/hide section)
+                if (link.notes && link.notes.trim()) {
+                    detailsNotes.textContent = escapeHTML(link.notes);
+                    detailsNotesSection.style.display = 'block';
+                } else {
+                    detailsNotesSection.style.display = 'none';
+                }
+
+                // Populate Tags (and show/hide section)
+                if (link.tags && link.tags.length > 0) {
+                    detailsTags.innerHTML = link.tags.map(tag =>
+                        `<span class="tag">${escapeHTML(tag)}</span>` // Non-clickable tags here
+                    ).join('');
+                    detailsTagsSection.style.display = 'block';
+                } else {
+                    detailsTagsSection.style.display = 'none';
+                }
+
+                 // Populate Details
+                 detailsSavedDate.textContent = new Date(link.timestamp).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); // More detailed date/time
+                 detailsDomain.textContent = domain || 'N/A';
+
+
+                openModal(viewDetailsModal);
+            }
+
+            // --- Event Handlers ---
+            fabAdd.addEventListener('click', showAddModal);
+            cancelBtn.addEventListener('click', () => closeModal(addEditModal));
+            confirmNoBtn.addEventListener('click', () => closeModal(confirmDialog));
+            themeToggleBtn.addEventListener('click', toggleTheme);
+            detailsCloseBtn.addEventListener('click', () => closeModal(viewDetailsModal)); // Close details modal
+
+            // Edit button within Details Modal
+            detailsEditBtn.addEventListener('click', () => {
+                 const linkToEdit = links.find(link => link.id === linkToViewId);
+                 if (linkToEdit) {
+                     closeModal(viewDetailsModal); // Close details first
+                     // Slight delay to ensure smooth transition if needed
+                     setTimeout(() => showEditModal(linkToEdit), 50);
+                 }
+            });
+
+             // Delete button within Details Modal
+             detailsDeleteBtn.addEventListener('click', () => {
+                 if (linkToViewId) {
+                     closeModal(viewDetailsModal); // Close details first
+                      // Slight delay
+                      setTimeout(() => showConfirmDialog(linkToViewId), 50);
+                 }
+             });
+
+
+            // Search Input Handler
+            searchInput.addEventListener('input', (e) => {
+                currentSearchTerm = e.target.value;
+                renderLinks();
+            });
+
+            // Event Delegation for link cards (Edit, Delete buttons, Tag Click)
+            linkList.addEventListener('click', (e) => {
+                const target = e.target;
+                const button = target.closest('button'); // Find the nearest button ancestor
+
+                // Handle button clicks within link-actions
+                if (button && target.closest('.link-actions')) {
+                     e.stopPropagation(); // IMPORTANT: Prevent card click (view details) when clicking buttons
+                    const id = button.dataset.id;
+
+                    if (button.classList.contains('edit-btn')) {
+                        const linkToEdit = links.find(link => link.id === id);
+                        if (linkToEdit) showEditModal(linkToEdit);
+                    }
+                    else if (button.classList.contains('delete-btn')) {
+                        showConfirmDialog(id);
+                    }
+                 }
+                 // Handle tag clicks directly on the tag span
+                 else if (target.classList.contains('clickable-tag')) {
+                     e.stopPropagation(); // Prevent card click when clicking tag
+                     const tag = target.dataset.tag;
+                     activeFilterTag = tag;
+                     searchInput.value = '';
+                     currentSearchTerm = '';
+                     renderLinks();
+                 }
+                 // Note: Card content click listener is added *inside* createLinkCard
+            });
+
+             // Clear Filter
+            function clearFilter() {
+                activeFilterTag = null;
+                renderLinks();
+            }
+
+
+            // Form Submission (Save/Update)
+            linkForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const urlValue = linkUrlInput.value.trim();
+                 const titleValue = linkTitleInput.value.trim();
+                 const domainValue = getDomainName(urlValue); // Get domain name
+
+                 if (!isValidUrl(urlValue)) {
+                     alert('Please enter a valid URL (e.g., https://example.com)');
+                     linkUrlInput.focus();
+                     return;
+                 }
+
+                const linkData = {
+                    id: isEditing ? linkIdInput.value : Date.now().toString(),
+                    url: urlValue,
+                    title: titleValue || domainValue || urlValue, // Use domain or URL as fallback title
+                    domain: domainValue || '', // Save the domain
+                    notes: linkNotesInput.value.trim(),
+                    tags: linkTagsInput.value.split(',')
+                        .map(tag => tag.trim().toLowerCase())
+                        .filter(tag => tag !== ''), // Standardize tags
+                    timestamp: isEditing ? links.find(l => l.id === linkIdInput.value)?.timestamp || Date.now() : Date.now() // Keep original timestamp on edit, fallback if somehow missing
+                };
+
+
+                 links = getLinksFromStorage();
+                if (isEditing) {
+                    const index = links.findIndex(link => link.id === linkData.id);
+                    if (index !== -1) {
+                        links[index] = linkData;
+                    } else {
+                         links.push(linkData); // Should not happen, but acts as fallback
+                    }
+                } else {
+                    links.push(linkData);
+                }
+                saveLinksToStorage();
+                renderLinks();
+                closeModal(addEditModal);
+            });
+
+            // Confirm Deletion
+            confirmYesBtn.addEventListener('click', () => {
+                if (linkToDeleteId) {
+                    links = getLinksFromStorage();
+                    links = links.filter(link => link.id !== linkToDeleteId);
+                    saveLinksToStorage();
+                    renderLinks();
+                    linkToDeleteId = null;
+                    closeModal(confirmDialog);
+                }
+            });
+
+            // --- Utility Functions ---
+            function getDomainName(url) {
+                if (!url) return null;
+                try {
+                    let fullUrl = url;
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                        // Basic check: if it contains common TLDs assume https, else maybe it's an internal/custom scheme?
+                        // This is imperfect but better than assuming https for everything.
+                        if (url.includes('.') && !url.includes(' ') && url.includes('/')) {
+                            fullUrl = 'https://' + url;
+                        } else if (url.includes('.') && !url.includes(' ') && !url.includes('/')){
+                             fullUrl = 'https://' + url;
+                        }
+                         else {
+                             return null; // Cannot determine protocol confidently
+                         }
+                    }
+                    const parsedUrl = new URL(fullUrl);
+                    // Handle IP addresses - return the IP itself as domain
+                    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(parsedUrl.hostname)) {
+                        return parsedUrl.hostname;
+                    }
+                     // Remove 'www.' prefix
+                    return parsedUrl.hostname.replace(/^www\./, '');
+                } catch (e) {
+                    // console.warn("Could not parse URL for domain:", url, e);
+                    return null; // Return null if parsing fails
+                }
+            }
+
+            function isValidUrl(string) {
+                 if (!string) return false;
+                 // Allow common protocols, basic structure check
+                 if (!string.includes('.') && !string.startsWith('localhost') && !string.startsWith('file:')) return false; // Needs a dot unless it's localhost/file
+
+                 // Try common protocols
+                 if (string.startsWith('http://') || string.startsWith('https://') || string.startsWith('ftp://') || string.startsWith('file://')) {
+                     try {
+                         new URL(string);
+                         return true;
+                     } catch (_) {
+                         return false;
+                     }
+                 }
+
+                 // If no protocol, try adding https://
+                 try {
+                     new URL('https://' + string);
+                     return true;
+                 } catch (_) {
+                     return false;
+                 }
+            }
+
+             function escapeHTML(str) {
+                if (str === null || str === undefined) return '';
+                return String(str).replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#039;');
+            }
+
+            // --- Initial Load ---
+            links = getLinksFromStorage();
+            renderLinks();
+
+            // Close modals on escape key press
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (addEditModal.classList.contains('visible')) {
+                        closeModal(addEditModal);
+                    } else if (confirmDialog.classList.contains('visible')) {
+                        closeModal(confirmDialog);
+                    } else if (viewDetailsModal.classList.contains('visible')) {
+                        closeModal(viewDetailsModal);
+                    }
+                }
+            });
+
+             // Close modals on backdrop click
+             [addEditModal, confirmDialog, viewDetailsModal].forEach(modal => {
+                 modal.addEventListener('click', (e) => {
+                     if (e.target === modal) { // Only close if clicking the backdrop itself
+                         closeModal(modal);
+                     }
+                 });
+             });
+
+        });
+    </script>
+</body>
+</html>
